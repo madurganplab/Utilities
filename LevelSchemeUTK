@@ -39,17 +39,17 @@ annotationsFonts[7].rotation=70 ; annotationsFonts[8].rotation=70  #gamma transi
 
 # # Energy-1 LineColor-2 LineWidth-3 LabelJpi-4 LabelFont-5 LabelE-6 LabelFont-7 labelLifetime-8 lifetimeFont-9
 levels=[ 
-0    :black 3 L"0^+"   annotationsFonts[1]   " "        annotationsFonts[2]  " 7.6 ms +5−8"           annotationsFonts[5] ; #1
-662  :black 1 L"2^+"   annotationsFonts[1]   "662 keV"  annotationsFonts[2]  " 41 ps +12−8"           annotationsFonts[5] ; #2
-832  :red   1 L"0_2^+" annotationsFonts[3]   "832 keV"  annotationsFonts[4]  "[120-500] ns +800-20"  annotationsFonts[6] ;  #3
-2008 :black 1 L"4^+"   annotationsFonts[1]   "2008 keV" annotationsFonts[2]  "  "                    annotationsFonts[5]    #4
+0    :black 3 L"0^+"   annotationsFonts[1]   " "        annotationsFonts[2]  " xx ms "           annotationsFonts[5] ; #1
+1000  :black 1 L"2^+"   annotationsFonts[1]   "1000 keV"  annotationsFonts[2]  " xx ps "         annotationsFonts[5] ; #2
+1500  :red   1 L"4^+" annotationsFonts[3]   "1500 keV"  annotationsFonts[4]  "  "                annotationsFonts[6] ;  #3
+2000 :black 1 L"6^+"   annotationsFonts[1]   "2000  keV" annotationsFonts[2]  "  "               annotationsFonts[5]    #4
 ] 
 
 # # levelHigh-1 levelLow-2 arrowColor-3 arrowWidth-4 Label-5 labelFont-6
 transitions=[
-levels[2,1] levels[1,1] :black 1 "662 keV [E2]"  annotationsFonts[7] ;
-levels[3,1] levels[2,1] :red   1 "170 keV"       annotationsFonts[8] ;
-levels[4,1] levels[2,1] :black 1 "1346 keV"      annotationsFonts[7]
+levels[2,1] levels[1,1] :black 1 "1000 keV [E2]"  annotationsFonts[7] ;
+levels[3,1] levels[2,1] :red   1 "500 keV"       annotationsFonts[8] ;
+levels[4,1] levels[3,1] :black 1 "500 keV"      annotationsFonts[7]
 ]
 
 # Canvas and position settings
@@ -73,7 +73,7 @@ ylims=(canvasLow,canvasHigh),xlims=(00,canvasWidth)
 )
 
 # # Nuclei labels
-annotate!([(canvasWidth/2,nucLabel,(L"^{36}_{12}\textrm{Mg}_{24}",annotationsFonts[9]))])
+annotate!([(canvasWidth/2,nucLabel,(L"^{A}_{Z}\textrm{Uub}_{N}",annotationsFonts[9]))])
 
 # # Plot levels and transitions from dictionaries
 
