@@ -1,20 +1,20 @@
 # General physics functions and utilities.
-# usage --> include("generalPhysicsFunctions.jl")
+# usage --> include("~/generalPhysicsFunctions.jl")
 
 
-## beta decay utilities
+## β decay utilities
 
 
-function daughterActivity(x,A,lambda::Float64)
-    return A*exp(-lambda*x)  #A is initial activity, lambda is the decay probability (ln2/T12)
+function daughterActivity(x,A,λ::Float64)
+    return A*exp(-λ*x)  #A is initial activity, λ is the decay probability (ln2/T12)
 end
 
-function grandDaughterActivity(x,A::Float64,lambda::Float64,mu::Float64)
-    return (lambda*mu)/(mu-lambda)*A*(exp(-lambda*x)-exp(-mu*x)) #A:initial activity, lambda:daughter, mu:granddaughter
+function grandDaughterActivity(x,A,λ::Float64,μ::Float64)
+    return (λ*μ)/(μ-λ)*A*(exp(-λ*x)-exp(μ*x)) #A:initial activity, λ:daughter, μ:granddaughter
 end
 
-function calculateT12(z,Qbeta,Ex::Vector,BGT::Vector)
-    #Qbeta: beta decay Q value in MeV
+function calculateT12(z,Qβ,Ex::Vector,BGT::Vector)
+    #Qβ: β decay Q value in MeV
     #Ex: daughter states relative to the ground state energy in MeV
     #z: mother Z 
 
@@ -30,13 +30,13 @@ function calculateT12(z,Qbeta,Ex::Vector,BGT::Vector)
     coeff[3,1] + log(zDaughter) * coeff[3,2] + coeff[3,3]*log(zDaughter)^2. + coeff[3,4]*log(zDaughter)^3.,
     coeff[4,1] + log(zDaughter) * coeff[4,2] + coeff[4,3]*log(zDaughter)^2. + coeff[4,4]*log(zDaughter)^3.  
     ]
-    betaEp = (Qbeta .-  (Ex)) .* 1000 #convert to keV
-    lf = evalCoeff[1] .+ evalCoeff[2].*log.(betaEp[findall(betaEp.>0)]) .+ evalCoeff[3].*log.(betaEp[findall(betaEp.>0)]).^2. .+ evalCoeff[4].*log.(betaEp[findall(x->x>0,betaEp)]).^3.
+    βEp = (Qβ .-  (Ex)) .* 1000 #convert to keV
+    lf = evalCoeff[1] .+ evalCoeff[2].*log.(βEp[findall(βEp.>0)]) .+ evalCoeff[3].*log.(βEp[findall(βEp.>0)]).^2. .+ evalCoeff[4].*log.(βEp[findall(x->x>0,βEp)]).^3.
 
     D=6144/(-1.2701)^2
-    lambda=log(2) .* 10 .^lf .* 0.6^2 .* BGT[findall(betaEp.>0)] ./ D
+    λ=log(2) .* 10 .^lf .* 0.6^2 .* BGT[findall(βEp.>0)] ./ D
 
-    return log(2)./sum(lambda)
+    return log(2)./sum(λ)
     
 end
 

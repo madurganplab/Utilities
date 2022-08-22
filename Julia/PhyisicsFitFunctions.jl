@@ -2,7 +2,7 @@
 # Functions take a parameter vector of any length. Define the vector of the approprite length
 # for Optim to minimize the chi squared function
 # All functions require a global `x` vector containing the bin values for the sample being fitted
-# usage --> include("PhysicsFitFunctions.jl")
+# usage --> include("~/PhysicsFitFunctions.jl")
 
 #Classical gaussian (normal distribution). Para[3] corresponds to amplitude, not area.
 function gauss(para::Vector) 
