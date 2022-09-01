@@ -1,6 +1,18 @@
 # General physics functions and utilities.
 # usage --> include("~/generalPhysicsFunctions.jl")
 
+## Spectrometry utilities
+
+#Calculates the gaussian broadening of a 1D spectrum contained in array vectors x coordinate and w Weight)
+
+function gaussianSmoothing(x::Vector,w::Vector,σ)
+    smooth=Array{Float64,1}(undef,length(x))
+    for i in 1:length(x)
+         smooth = smooth .+ w[i]*pdf.(Normal.(x[i],σ),x)
+    end
+    return smooth
+end
+
 
 ## β decay utilities
 
@@ -43,11 +55,11 @@ end
 
 #neutron emission utilities
 
-function nPenetration(x::Float64,mass::Vector,Lorb)
+function nPenetration(x,mass::Vector,Lorb)
     
     AM1 = mass[1] #recoil
     AM2 = mass[2] #neutron
-    E = x         #Energy in keV
+    E = x  * 1000.       #Energy in keV
     R = 1.4  * AM1^0.333333 + AM2^0.333333
     RMAS = AM1*AM2/(AM1+AM2)*931502
     eo = (197329^2)/(2*RMAS*R^2)
