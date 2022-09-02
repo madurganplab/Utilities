@@ -10,7 +10,7 @@
 # in order to add a background function define:
 # gaussianSmoothing(x,w,σ,xrange) .+ function.(xrange)
 
-function gaussianSmoothing(μ::Vector,w::Vector,σ,xrange::Vector)
+function gaussianSmoothing(μ::Vector,w::Vector,σ,xrange)
     smooth = Array{Float64,1}(undef,length(xrange))
     dx=(xrange[length(xrange)]-xrange[1])/length(xrange)
     for i in 1:length(μ)
@@ -24,14 +24,29 @@ end
 #  and the evaluation range "xrange" being the x-variable
 #  example: function test(μ,xrange); return 1 ./ (xrange.-μ).^2; end
 
-function convolution(f::Function,μ::Vector,w::Vector,xrange::Vector)
+function convolution(f::Function,μ::Vector,w::Vector,xrange)
     smooth = Array{Float64,1}(undef,length(xrange))
     dx=(xrange[length(xrange)]-xrange[1])/length(xrange)
     for i in 1:length(μ)
-         smooth .+= w[i].* f.(μ[i],xrange) .* dx
+         smooth .+= w[i].* f(μ[i],xrange) .* dx
     end
     return smooth
 end
+
+# Generic VANDLE response function (single exponential tail). μ is centroid, σ is gaussian width,
+# λ is exponential tail
+# in order to use it for the generic convolution routine above it needs to be redefine with fixed σ and λ
+# currently NOT normalized to 1
+
+function vandleResponse(μ,σ,λ,xrange)
+    vandle = []
+    for i in xrange
+        if i<μ+5; push!(vandle,exp(-0.5*(i-μ)^2 / σ^2)); end
+        if i>=μ+5; push!(vandle,exp(-0.5*(5)^2 / σ^2)*exp(-λ*(i-μ-5))); end
+    end  
+    return vandle
+end
+
 
 
 ## β decay utilities
