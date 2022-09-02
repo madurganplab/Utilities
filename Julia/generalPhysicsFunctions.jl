@@ -10,7 +10,7 @@
 # in order to add a background function define:
 # gaussianSmoothing(x,w,σ,xrange) .+ function.(xrange)
 
-function gaussianSmoothing(μ::Vector,w::Vector,σ,xrange)
+function gaussianSmoothing(μ::Vector,w::Vector,σ,xrange::Vector)
     smooth = Array{Float64,1}(undef,length(xrange))
     dx=(xrange[length(xrange)]-xrange[1])/length(xrange)
     for i in 1:length(μ)
@@ -19,11 +19,12 @@ function gaussianSmoothing(μ::Vector,w::Vector,σ,xrange)
     return smooth
 end
 
-## generic convolution function. Requires a function "f" that takes as variables 
-#  centroid (from μ) and the evaluation range "xrange" being the x-variable
+## Generic convolution function. 
+#  Requires a function "f" that takes as variables centroid (from μ) 
+#  and the evaluation range "xrange" being the x-variable
 #  example: function test(μ,xrange); return 1 ./ (xrange.-μ).^2; end
 
-function convolution(f::Function,μ::Vector,w::Vector,σ,xrange)
+function convolution(f::Function,μ::Vector,w::Vector,xrange::Vector)
     smooth = Array{Float64,1}(undef,length(xrange))
     dx=(xrange[length(xrange)]-xrange[1])/length(xrange)
     for i in 1:length(μ)
