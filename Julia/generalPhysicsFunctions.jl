@@ -3,7 +3,7 @@
 
 ## Spectrometry utilities
 
-#Calculates the gaussian broadening of a 1D distribution contained in array vectors mu coordinate and w Weight. 
+#Calculates the gaussian broadening (σ width) of a 1D distribution contained in array vectors μ coordinate and w Weight. 
 # Projects the distribution to a range defined by xrange
 # returns vector with distribution normalized to sum(w)
 
@@ -11,7 +11,7 @@ function gaussianSmoothing(μ::Vector,w::Vector,σ,xrange)
     smooth = Array{Float64,1}(undef,length(xrange))
     dx=(xrange[length(xrange)]-xrange[1])/length(xrange)
     for i in 1:length(μ)
-         smooth = smooth .+ w[i]*pdf.(Normal.(μ[i],σ),xrange).*dx
+         smooth .+= w[i]*pdf.(Normal.(μ[i],σ),xrange).*dx
     end
     return smooth
 end
