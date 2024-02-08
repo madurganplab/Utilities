@@ -1,7 +1,7 @@
 
 # include("/Users/mmadurga/Library/Mobile Documents/com~apple~CloudDocs/Coding Projects/Utilities/Julia/betaDecayUtil.jl");
 
-module bDecayUtil
+module BetaDecayUtil
 
 export logftfromib,calculateT12,daughterActivity, grandDaughterActivity,nPenetrability,logftfrombgt,calculateIb,ecoulomb
 
