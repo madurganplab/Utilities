@@ -1,10 +1,10 @@
-# include("/Users/mmadurga/Library/Mobile Documents/com~apple~CloudDocs/Coding Projects/Utilities/Julia/VandleResponse.jl")
+# include("/Users/mmadurga/Library/Mobile Documents/com~apple~CloudDocs/Coding Projects/Utilities/Julia/VandleResponses.jl")
 
-module VandleResponse
+module VandleResponses
 
-export vandleresponse
+export isolderesponse
 
-function vandleresponse(t,inputarea,Tₒ,distance)
+function isolderesponse(t,inputarea,Tₒ,distance)
 
     Area=Array{Float32,1}(undef,5)
 
@@ -72,4 +72,6 @@ function vandleresponse(t,inputarea,Tₒ,distance)
     
     return response
 
-    end
+end
+
+end
