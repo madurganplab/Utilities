@@ -1,8 +1,12 @@
 using Pkg; Pkg.add("UnROOT")
 using UnROOT,Plots
 
-default(lc=:navy,lw=1.5,xlabel="E(keV)",tickfontsize=11,
-framestyle=:box,grid=false)
+default(lc=:navy,
+        lw=1.5,
+        xlabel="E(keV)",
+        tickfontsize=11,
+        framestyle=:box,
+        grid=false)
 
 f=ROOTFile("/SCRATCH/DScratch3/is733/2024apr/K47_T1_001_DD.root")
 
