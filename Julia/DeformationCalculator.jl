@@ -12,14 +12,14 @@ function cg2(Ji::Real, Jf::Real, K::Real)
 end
 
 function qo(BE2,CG2)
-    return sqrt(16π/5*BE2/CG2)
+    return sqrt( 16π/5 * BE2/CG2 )
 end
 
 function beta2odd(A,Z,Ji,Jf,K,BE2)
     R=1.2*A^(1/3)
     CG=cg2(Ji,Jf,K)
     Q=qo(BE2,CG)
-    return sqrt(5π)/3*Q/(Z*R^2)
+    return sqrt( 5π)/3 * Q/(Z*R^2 )
 end
 
 function beta2even( A::Int,  Z::Int, BE2::Float64)
