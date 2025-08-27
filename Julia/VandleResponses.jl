@@ -64,7 +64,7 @@ function isolderesponse(t,inputarea,Tₒ,distance)
        
        response = inputarea * 1. /Norm*b2*exp(-k2*xx)
        
-    elseif (xx>(k3+d3)) then
+    elseif (xx>(k3+d3))
 
        response = inputarea * 1. /Norm*b3*exp(-k3*xx)
 
