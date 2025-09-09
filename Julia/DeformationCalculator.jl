@@ -19,7 +19,7 @@ end
 
 beta2odd(A,Z,Ji,Jf,K,BE2)
 
-Deformation calculated for the B(E2) between Ji and Jf members of band K.
+β₂ deformation calculator using B(E2) between Ji and Jf members of band K.
 
 
 """
@@ -35,7 +35,7 @@ end
 
 beta2even(A,Z,BE2↑)
 
-β₂ calculator for B(E2 0⁺→2⁺). For B(E2 2⁺→0⁺) multiply BE2↓ by 5.
+β₂ deformation calculator using B(E2 0⁺→2⁺). For B(E2 2⁺→0⁺) multiply BE2↓ by 5.
 
 """
 function beta2even( A::Int,  Z::Int, BE2::Any) 
