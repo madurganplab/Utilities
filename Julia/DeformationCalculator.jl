@@ -25,8 +25,8 @@ beta2odd(A,Z,Ji,Jf,K,BE2)
 """
 function beta2odd(A,Z,Ji,Jf,K,BE2)
     R=1.2*A^(1/3)
-    CG=cg2(Ji,Jf,K)
-    Q=qo(BE2,CG)
+    CGsqd=cg2(Ji,Jf,K)
+    Q=qo(BE2,CGsqd)
     return sqrt(5π)/3 * Q/(Z*R^2)
 end
 
