@@ -4,6 +4,7 @@ using WignerSymbols
 
 export beta2odd,beta2even,qo,cg2
 
+
 function cg2(Ji::Real, Jf::Real, K::Real)
     # Wigner 3j: (Ji  2  Jf;  K  0  -K)
     threej = wigner3j(Ji, 2, Jf, K, 0, -K)
@@ -19,14 +20,14 @@ end
 
 beta2odd(A,Z,Ji,Jf,K,BE2)
 
-β₂ deformation calculator using B(E2) between Ji and Jf members of band K.
+β₂ deformation calculator using B(E2) (e²fm⁴) between Ji and Jf members of band K.
 
 
 """
 function beta2odd(A,Z,Ji,Jf,K,BE2)
     R=1.2*A^(1/3)
-    CGsqd=cg2(Ji,Jf,K)
-    Q=qo(BE2,CGsqd)
+    clebshgordansquared=cg2(Ji,Jf,K)
+    Q=qo(BE2,clebshgordansquared)
     return sqrt(5π)/3 * Q/(Z*R^2)
 end
 
@@ -35,7 +36,7 @@ end
 
 beta2even(A,Z,BE2↑)
 
-β₂ deformation calculator using B(E2 0⁺→2⁺). For B(E2 2⁺→0⁺) multiply BE2↓ by 5.
+β₂ deformation calculator using B(E2↑ 0⁺→2⁺) (e²fm⁴). When using B(E2↓ 2⁺→0⁺) multiply it by 5.
 
 """
 function beta2even( A::Int,  Z::Int, BE2::Any) 
