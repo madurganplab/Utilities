@@ -88,13 +88,28 @@ if isnothing(eff) Iₙ = selectedintensities.*εᵥ.(Eₙ,0.8)
 else  Iₙ = selectedintensities
 end
 
-detectedsample = sum(ionsample.*Iₙ)
+transitionToF = ToF(path,Qᵦ,Sₙ,Eₓ)
+response(t) = sum(VandleResponses.isolderesponse.(t,Iₙ,transitionToF,path))
+promptresponse(t) = exp(-0.5*(t-path/c)^2)
 
-peaksample=MonteCarlo.mcreject(cutoff,t₁,t₂,detectedsample,t->sum(VandleResponses.isolderesponse.(t,Iₙ,ToF(path,Qᵦ,Sₙ,Eₓ),path)))
+# Rejection sampling is conditional on [t₁,t₂], so its event count must
+# be the integral of the plotted rate over that same interval.  A fine
+# trapezoidal grid is sufficient for the smooth detector response.
+function windowintegral(f,xmin,xmax)
+    grid = range(xmin,xmax,length=max(10_001,ceil(Int,(xmax-xmin)*100)+1))
+    values = f.(grid)
+    step(grid)*(sum(values)-(first(values)+last(values))/2)
+end
 
-promptsample=MonteCarlo.mcreject(1,t₁,t₂,detectedsample*10,t->exp(-0.5*(t-path/c)^2))
+peakevents = round(Int,ionsample*windowintegral(response,t₁,t₂))
+promptevents = round(Int,ionsample*windowintegral(promptresponse,t₁,t₂))
+backgroundevents = round(Int,backgroundlevel*(t₂-t₁))
 
-backgroundsample=MonteCarlo.mcreject(0.5,0,t₂,t₂*backgroundlevel,t->0.4)
+peaksample=MonteCarlo.mcreject(cutoff,t₁,t₂,peakevents,response)
+
+promptsample=MonteCarlo.mcreject(1,t₁,t₂,promptevents,promptresponse)
+
+backgroundsample=MonteCarlo.mcreject(1,t₁,t₂,backgroundevents,t->1.0)
 
 return [ peaksample ; promptsample ; backgroundsample ]
 
@@ -112,8 +127,13 @@ if isnothing(eff) Iₙ = selectedintensities.*εᵥ.(Eₙ)
 else  Iₙ = selectedintensities
 end
 
-p=plot(MCHist(cutoff,path,Z,Qᵦ,Sₙ,Eₓ,BGT,backgroundlevel,ionsample,t₁,t₂,eff),
-        seriestype=:stephist,lc=:navy,lw=2,nbins=round(Int,t₂-t₁),
+sample = MCHist(cutoff,path,Z,Qᵦ,Sₙ,Eₓ,BGT,backgroundlevel,ionsample,t₁,t₂,eff)
+nbins = max(1,round(Int,t₂-t₁))
+binedges = range(t₁,t₂,length=nbins+1)
+binwidth = step(binedges)
+p=plot(sample,
+        seriestype=:stephist,lc=:navy,lw=2,bins=binedges,
+        weights=fill(inv(binwidth),length(sample)),
         ylims=(0,ymax),xlims=(t₁,t₂),label="",
         xlabel="ToF (ns)",ylabel="counts/ns",
         top_margin=7mm)
@@ -149,11 +169,12 @@ end
 enticks = [0.1,0.2,0.3,0.5,1.0,2.0,5.0]
 tofticks = ToF(path,Qᵦ,Sₙ,enticks.+Sₙ)
 
-for i in tofticks plot!([i,i],[ymax-ymax/20,ymax],lc=:black,lw=1,label="") end
-for (i,tof) in enumerate(tofticks) annotate!(tof,ymax+ymax/20,text("$(enticks[i])",12)) end
+for i in findall(tofticks.<(t₂-20))
+    plot!([tofticks[i],tofticks[i]],[ymax-ymax/20,ymax],lc=:black,lw=1,label="")
+    annotate!(tofticks[i],ymax+ymax/20,text("$(enticks[i])",12))
+end
 annotate!(t₂,ymax+ymax/20,text("Eₙ (MeV)",12,:right))
 display(p)
-
 
 end
 
