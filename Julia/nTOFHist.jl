@@ -166,7 +166,7 @@ else
     end
 end
 
-enticks = [0.1,0.2,0.3,0.5,1.0,2.0,5.0]
+enticks = [0.05,0.1,0.2,0.3,0.5,1.0,2.0,5.0]
 tofticks = ToF(path,Qᵦ,Sₙ,enticks.+Sₙ)
 
 for i in findall(tofticks.<(t₂-20))
