@@ -132,7 +132,7 @@ nbins = max(1,round(Int,t₂-t₁))
 binedges = range(t₁,t₂,length=nbins+1)
 binwidth = step(binedges)
 p=plot(sample,
-        seriestype=:stephist,lc=:navy,lw=2,bins=binedges,
+        seriestype=:stephist,lc=:navy,lw=1.5,bins=binedges,
         weights=fill(inv(binwidth),length(sample)),
         ylims=(0,ymax),xlims=(t₁,t₂),label="",
         xlabel="ToF (ns)",ylabel="counts/ns",
