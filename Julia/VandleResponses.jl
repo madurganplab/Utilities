@@ -48,7 +48,7 @@ function isolderesponse(t,inputarea,Tₒ,distance)
 
     # Response Function
 
-    if ((-1/sqrt(Aₒ) <= xx)&&(xx<=0)) 
+    if ((-σₒₚ/sqrt(Aₒ) <= t-Tₒ)&&(t-Tₒ<=0))
 
        response = inputarea * 1. /Norm * (σₒₚ ^2/((t-Tₒ)^2. +σₒₚ ^2.) * (Aₒ+1) - Aₒ )
     
