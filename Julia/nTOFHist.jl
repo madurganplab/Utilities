@@ -123,8 +123,9 @@ function neutronbranches(Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT)
         for f in eachindex(Eᶠ)
             energy = Eₓ[i]-Sₙ-Eᶠ[f]
             energy > 0 || continue
-            L = lowestneutronL(Jᵢ[i],πᵢ[i],Jᶠ[f],πᶠ[f])
-            width = BetaDecayUtils.nPenetrability(energy,A-1,1,L)
+            maxL = max(8,ceil(Int,Jᵢ[i]+Jᶠ[f]+0.5)+1)
+            L = lowestneutronL(Jᵢ[i],πᵢ[i],Jᶠ[f],πᶠ[f]; maxL=maxL)
+            width = L > 7 ? 0.0 : BetaDecayUtils.nPenetrability(energy,A-1,1,L)
             isfinite(width) && width >= 0 ||
                 throw(ArgumentError("invalid penetrability for transition $i → $f"))
             push!(openbranches,(parent=i,final=f,energy=energy,L=L,width=width))
