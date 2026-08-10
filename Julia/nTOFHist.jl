@@ -122,7 +122,7 @@ function neutronbranches(Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT)
         openbranches = NamedTuple[]
         for f in eachindex(Eᶠ)
             energy = Eₓ[i]-Sₙ-Eᶠ[f]
-            energy > 0 || continue
+            energy > 100eps(Float64) * max(abs(Eₓ[i]), abs(Sₙ), abs(Eᶠ[f]), 1.0) || continue
             maxL = max(8,ceil(Int,Jᵢ[i]+Jᶠ[f]+0.5)+1)
             L = lowestneutronL(Jᵢ[i],πᵢ[i],Jᶠ[f],πᶠ[f]; maxL=maxL)
             width = L > 7 ? 0.0 : BetaDecayUtils.nPenetrability(energy,A-1,1,L)
@@ -206,7 +206,7 @@ given initial state are weighted in proportion to their neutron penetrability,
 which corresponds to assuming equal reduced widths. The selected `L` also
 satisfies the neutron-emission parity relation `πᵢ = πᶠ(-1)^L`.
 """
-function MCHistEx(cutoff,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT,
+function MCHist(cutoff,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT,
                   backgroundlevel,ionsample,t₁,t₂,eff=nothing)
     branches = neutronbranches(Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT)
     neutronenergies = getproperty.(branches,:energy)
@@ -302,7 +302,7 @@ Plot a time-of-flight sample from [`MCHistEx`](@ref), its summed expected
 response, and every energetically open neutron branch. Parities must be given
 as `+1` or `-1`.
 """
-function plotMChistEx(cutoff,ymax,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT,
+function plotMCHist(cutoff,ymax,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT,
                       backgroundlevel,ionsample,t₁,t₂,eff=nothing)
     branches = neutronbranches(Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT)
     neutronenergies = getproperty.(branches,:energy)
