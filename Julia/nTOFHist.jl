@@ -312,7 +312,7 @@ function plotMCHist(cutoff,ymax,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,π�
     end
     transitionToF = neutronToF.(path,neutronenergies)
 
-    sample = MCHistEx(cutoff,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT,
+    sample = MCHist(cutoff,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT,
                       backgroundlevel,ionsample,t₁,t₂,eff)
     nbins = max(1,round(Int,t₂-t₁))
     binedges = range(t₁,t₂,length=nbins+1)
