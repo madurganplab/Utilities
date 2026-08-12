@@ -9,12 +9,16 @@ export level_scheme, @level_scheme
     level_scheme(experiment, theory; experiment_title="Experiment",
                  theory_title="Theory", kwargs...)
 
-Plot a nuclear level scheme from `nstates × 3` matrices. Each row must contain
-`(excitation_energy, spin, parity)`, where parity is numerically `+1` or `-1`.
-Spin may be integral or half-integral. Use `missing` for an unknown spin or
-parity; the level is still drawn and its known quantum-number information is
-shown. Energies must be finite, non-negative real numbers, and known spins must
-also be finite and non-negative.
+Plot a nuclear level scheme from `nstates × 3` or `nstates × 4` matrices. The
+first three columns contain `(excitation_energy, spin, parity)`, where parity is
+numerically `+1` or `-1`. In a four-column matrix, assignment status is `:firm`,
+`:tentative`, or `missing`. Tentative assignments are displayed in parentheses;
+missing-status assignments are displayed without a spin-parity label.
+Spin may be integral, half-integral, or a non-empty range of such values. A
+range such as `2:4` is always displayed as tentative: `(2⁺, 3⁺, 4⁺)`. Use
+`missing` for an unknown spin or parity; the level is still drawn and its known
+quantum-number information is shown. Energies must be finite, non-negative real
+numbers, and known spins must also be finite and non-negative.
 
 When `theory` is supplied, it is drawn beside the experimental scheme. Every
 experimental state with known spin and parity is connected to the lowest-energy
@@ -117,17 +121,18 @@ macro level_scheme(experiment, theory)
 end
 
 function _validate_levels(levels::AbstractMatrix, name::AbstractString)
-    size(levels, 2) == 3 || throw(ArgumentError(
-        "$name levels must be an nstates × 3 matrix; got size $(size(levels))",
+    size(levels, 2) in (3, 4) || throw(ArgumentError(
+        "$name levels must be an nstates × 3 or nstates × 4 matrix; got size $(size(levels))",
     ))
     size(levels, 1) > 0 || throw(ArgumentError("$name levels must not be empty"))
 
     states = NamedTuple{
-        (:energy, :spin, :parity),
-        Tuple{Float64,Union{Missing,Float64},Union{Missing,Int}},
+        (:energy, :spin, :parity, :status),
+        Tuple{Float64,Union{Missing,Float64,Vector{Float64}},Union{Missing,Int},Union{Missing,Symbol}},
     }[]
     for row in axes(levels, 1)
         energy, spin, parity = levels[row, 1], levels[row, 2], levels[row, 3]
+        status = size(levels, 2) == 4 ? levels[row, 4] : :firm
 
         energy isa Real || throw(ArgumentError(
             "$name energy in row $row must be a real number",
@@ -135,27 +140,21 @@ function _validate_levels(levels::AbstractMatrix, name::AbstractString)
         isfinite(energy) && energy >= 0 || throw(ArgumentError(
             "$name energy in row $row must be finite and non-negative",
         ))
-        if !ismissing(spin)
-            spin isa Real || throw(ArgumentError(
-                "$name spin in row $row must be a real number or missing",
-            ))
-            isfinite(spin) && spin >= 0 || throw(ArgumentError(
-                "$name spin in row $row must be finite and non-negative",
-            ))
-            isinteger(2 * spin) || throw(ArgumentError(
-                "$name spin in row $row must be integral or half-integral",
-            ))
-        end
+        normalized_spin = _validate_spin(spin, name, row)
         if !ismissing(parity)
             (parity isa Real && (parity == 1 || parity == -1)) || throw(ArgumentError(
                 "$name parity in row $row must be +1, -1, or missing",
             ))
         end
+        (ismissing(status) || status === :firm || status === :tentative) || throw(ArgumentError(
+            "$name status in row $row must be :firm, :tentative, or missing",
+        ))
 
         push!(states, (
             energy=Float64(energy),
-            spin=ismissing(spin) ? missing : Float64(spin),
+            spin=normalized_spin,
             parity=ismissing(parity) ? missing : Int(parity),
+            status=status,
         ))
     end
     return states
@@ -164,12 +163,14 @@ end
 function _yrast_indices(states)
     lowest = Dict{Float64,Int}()
     for (index, state) in pairs(states)
-        ismissing(state.spin) && continue
-        if !haskey(lowest, state.spin) || state.energy < states[lowest[state.spin]].energy
-            lowest[state.spin] = index
+        (ismissing(state.spin) || ismissing(state.status)) && continue
+        for spin in _spin_values(state.spin)
+            if !haskey(lowest, spin) || state.energy < states[lowest[spin]].energy
+                lowest[spin] = index
+            end
         end
     end
-    return sort!(collect(values(lowest)); by=index -> (states[index].spin, states[index].energy))
+    return unique(sort!(collect(values(lowest)); by=index -> states[index].energy))
 end
 
 function _experimental_match(theoretical_state, experimental_states)
@@ -177,16 +178,28 @@ function _experimental_match(theoretical_state, experimental_states)
 end
 
 function _lowest_matching_state(reference_state, candidate_states)
-    (ismissing(reference_state.spin) || ismissing(reference_state.parity)) && return nothing
-    candidates = findall(state ->
-        !ismissing(state.spin) &&
-        !ismissing(state.parity) &&
-        state.spin == reference_state.spin &&
-        state.parity == reference_state.parity,
-        candidate_states,
-    )
-    isempty(candidates) && return nothing
-    return candidates[argmin([candidate_states[index].energy for index in candidates])]
+    matches = _matching_state_indices(reference_state, candidate_states)
+    isempty(matches) && return nothing
+    return matches[1]
+end
+
+function _matching_state_indices(reference_state, candidate_states)
+    (ismissing(reference_state.spin) || ismissing(reference_state.parity) ||
+     ismissing(reference_state.status)) && return Int[]
+    matches = Int[]
+    for spin in _spin_values(reference_state.spin)
+        candidates = findall(state ->
+            !ismissing(state.spin) &&
+            !ismissing(state.parity) &&
+            !ismissing(state.status) &&
+            spin in _spin_values(state.spin) &&
+            state.parity == reference_state.parity,
+            candidate_states,
+        )
+        isempty(candidates) && continue
+        push!(matches, candidates[argmin([candidate_states[index].energy for index in candidates])])
+    end
+    return unique(matches)
 end
 
 function _draw_scheme(
@@ -257,26 +270,26 @@ function _draw_scheme(
         )
 
         for experiment_state in experiment
-            theory_index = _lowest_matching_state(experiment_state, theory)
-            theory_index === nothing && continue
-            plot!(
-                plot_object,
-                [
-                    experiment_center + half_length + connector_inset,
-                    theory_center - half_length - connector_inset,
-                ],
-                [experiment_state.energy, theory[theory_index].energy];
-                color=connector_color,
-                linewidth=connector_linewidth,
-                label=false,
-            )
+            for theory_index in _matching_state_indices(experiment_state, theory)
+                plot!(
+                    plot_object,
+                    [
+                        experiment_center + half_length + connector_inset,
+                        theory_center - half_length - connector_inset,
+                    ],
+                    [experiment_state.energy, theory[theory_index].energy];
+                    color=connector_color,
+                    linewidth=connector_linewidth,
+                    label=false,
+                )
+            end
         end
     end
 
     title_y = -0.72 * bottom_margin
-    annotate!(plot_object, experiment_center, title_y, text(experiment_title, 11, :center))
+    annotate!(plot_object, experiment_center, title_y, text(experiment_title, 17, :center))
     if theory !== nothing
-        annotate!(plot_object, theory_center, title_y, text(theory_title, 11, :center))
+        annotate!(plot_object, theory_center, title_y, text(theory_title, 17, :center))
     end
 
     return plot_object
@@ -307,13 +320,13 @@ function _draw_levels!(
             plot_object,
             left,
             state.energy + label_y_offset,
-            text(_format_energy(state.energy, energy_digits), 9, :left),
+            text(_format_energy(state.energy, energy_digits), 15, :left),
         )
         annotate!(
             plot_object,
             right,
             state.energy + label_y_offset,
-            text(_format_spin_parity(state.spin, state.parity), 11, :right),
+            text(_format_spin_parity(state.spin, state.parity, state.status), 17, :right),
         )
     end
     return plot_object
@@ -324,15 +337,56 @@ function _format_energy(energy::Real, digits::Integer)
     return isinteger(rounded) ? string(Int(rounded)) : string(rounded)
 end
 
-function _format_spin_parity(spin, parity)
-    spin_label = if ismissing(spin)
-        ""
+function _format_spin_parity(spin, parity, status=:firm)
+    ismissing(status) && return ""
+    spin_labels = if ismissing(spin)
+        String[]
     else
-        doubled_spin = round(Int, 2 * spin)
-        iseven(doubled_spin) ? string(doubled_spin ÷ 2) : "$(doubled_spin)/2"
+        [_format_spin(value) for value in _spin_values(spin)]
     end
     parity_label = ismissing(parity) ? "" : parity == 1 ? "⁺" : "⁻"
-    return spin_label * parity_label
+    labels = isempty(spin_labels) ? [parity_label] : [label * parity_label for label in spin_labels]
+    label = join(labels, ", ")
+    tentative = spin isa AbstractVector || status === :tentative
+    return tentative && !isempty(label) ? "($label)" : label
+end
+
+function _format_spin(spin::Real)
+    doubled_spin = round(Int, 2 * spin)
+    return iseven(doubled_spin) ? string(doubled_spin ÷ 2) : "$(doubled_spin)/2"
+end
+
+_spin_values(spin::Real) = (spin,)
+_spin_values(spin::AbstractVector) = spin
+
+function _validate_spin(spin, name::AbstractString, row)
+    if ismissing(spin)
+        return missing
+    elseif spin isa AbstractRange
+        isempty(spin) && throw(ArgumentError("$name spin range in row $row must not be empty"))
+        values = Float64[]
+        for value in spin
+            _validate_spin_value(value, name, row)
+            push!(values, Float64(value))
+        end
+        return values
+    else
+        _validate_spin_value(spin, name, row)
+        return Float64(spin)
+    end
+end
+
+function _validate_spin_value(spin, name::AbstractString, row)
+    spin isa Real || throw(ArgumentError(
+        "$name spin in row $row must be a real number, range, or missing",
+    ))
+    isfinite(spin) && spin >= 0 || throw(ArgumentError(
+        "$name spin in row $row must be finite and non-negative",
+    ))
+    isinteger(2 * spin) || throw(ArgumentError(
+        "$name spin in row $row must be integral or half-integral",
+    ))
+    return nothing
 end
 
 end

@@ -49,6 +49,45 @@ using .NuclearLevelScheme
     @test NuclearLevelScheme._yrast_indices(unknown_states) == [1, 3]
     @test NuclearLevelScheme._experimental_match(states[2], unknown_states) === nothing
 
+    assignment_statuses = [
+        0.0  0  +1  :firm
+        1.0  2  +1  :tentative
+        1.5  4  -1  missing
+    ]
+    status_states = NuclearLevelScheme._validate_levels(
+        assignment_statuses,
+        "experiment",
+    )
+    @test level_scheme(assignment_statuses) isa NuclearLevelScheme.Plots.Plot
+    @test NuclearLevelScheme._format_spin_parity(
+        status_states[1].spin, status_states[1].parity, status_states[1].status,
+    ) == "0⁺"
+    @test NuclearLevelScheme._format_spin_parity(
+        status_states[2].spin, status_states[2].parity, status_states[2].status,
+    ) == "(2⁺)"
+    @test NuclearLevelScheme._format_spin_parity(
+        status_states[3].spin, status_states[3].parity, status_states[3].status,
+    ) == ""
+    @test NuclearLevelScheme._yrast_indices(status_states) == [1, 2]
+    @test_throws ArgumentError level_scheme([0 0 1 :uncertain])
+
+    spin_range = Matrix{Any}(undef, 3, 4)
+    spin_range[1, :] = Any[0.0, 0, +1, :firm]
+    spin_range[2, :] = Any[1.5, 2:4, +1, :firm]
+    spin_range[3, :] = Any[2.0, 3//2:1:7//2, -1, :tentative]
+    range_states = NuclearLevelScheme._validate_levels(spin_range, "experiment")
+    @test level_scheme(spin_range) isa NuclearLevelScheme.Plots.Plot
+    @test NuclearLevelScheme._format_spin_parity(
+        range_states[2].spin, range_states[2].parity, range_states[2].status,
+    ) == "(2⁺, 3⁺, 4⁺)"
+    @test NuclearLevelScheme._format_spin_parity(
+        range_states[3].spin, range_states[3].parity, range_states[3].status,
+    ) == "(3/2⁻, 5/2⁻, 7/2⁻)"
+    @test NuclearLevelScheme._matching_state_indices(range_states[2], states) == [2]
+    invalid_range = Matrix{Any}(undef, 1, 4)
+    invalid_range[1, :] = Any[0.0, 1//4:1//2:5//4, 1, :firm]
+    @test_throws ArgumentError level_scheme(invalid_range)
+
     @test_throws ArgumentError level_scheme(zeros(2, 2))
     @test_throws ArgumentError level_scheme(zeros(0, 3))
     @test_throws ArgumentError level_scheme([0.0 0.0 0.0])
