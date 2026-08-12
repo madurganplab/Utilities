@@ -11,9 +11,10 @@ export εᵥ,
 
 include("/Users/mmadurga/.julia/dev/Utilities/Julia/MonteCarlo.jl")
 include("/Users/mmadurga/.julia/dev/Utilities/Julia/VandleResponses.jl")
+include("/Users/mmadurga/.julia/dev/Utilities/Julia/FDSiEfficiencies.jl")
 include("/Users/mmadurga/.julia/dev/BetaDecayUtils/src/BetaDecayUtils.jl")
 
-using Plots,Measures
+using Plots,Measures,Distributions
 
 default(framestyle=:box,
         grid=false,
@@ -27,6 +28,60 @@ function εᵥ(Eₙ,εᵦ=0.8)
         if Eₙ<0.05 return 0
         else  return εᵦ*10^sum(calibrationpar.*log10.(Eₙ).^(eachindex(calibrationpar).-1))/100
         end
+end
+
+function sampleexcitedbranches(branches,path,intensities,ionsample,t₁,t₂)
+    t₁ < t₂ || throw(ArgumentError("t₁ must be smaller than t₂"))
+    ionsample >= 0 || throw(ArgumentError("ionsample must be nonnegative"))
+    grid = collect(range(t₁,t₂,length=max(10_001,ceil(Int,(t₂-t₁)*100)+1)))
+    Δt = step(range(t₁,t₂,length=length(grid)))
+    transitionToF = neutronToF.(path,getproperty.(branches,:energy))
+    profiles = Vector{Vector{Float64}}(undef,length(branches))
+    cdfs = Vector{Vector{Float64}}(undef,length(branches))
+    weights = zeros(Float64,length(branches))
+
+    for k in eachindex(branches)
+        unitprofile = Float64.(VandleResponses.isolderesponse.(
+            grid,1.0,transitionToF[k],path))
+        profile = intensities[k].*unitprofile
+        profiles[k] = profile
+        cumulative = zeros(Float64,length(grid))
+        for j in 2:length(grid)
+            cumulative[j] = cumulative[j-1] +
+                Δt*(unitprofile[j-1]+unitprofile[j])/2
+        end
+        area = last(cumulative)
+        weights[k] = intensities[k]*area
+        cdfs[k] = area > 0 ? cumulative./area : cumulative
+    end
+
+    eventcount = round(Int,ionsample*sum(weights))
+    times = Vector{Float64}(undef,eventcount)
+    branchindices = Vector{Int}(undef,eventcount)
+    finalindices = Vector{Int}(undef,eventcount)
+    if eventcount > 0
+        totalweight = sum(weights)
+        totalweight > 0 || throw(ArgumentError("total neutron response in [t₁,t₂] is zero"))
+        branchcdf = cumsum(weights)./totalweight
+        for n in eachindex(times)
+            k = searchsortedfirst(branchcdf,rand())
+            cdf = cdfs[k]
+            u = rand()
+            j = searchsortedfirst(cdf,u)
+            if j <= 1
+                times[n] = first(grid)
+            else
+                denominator = cdf[j]-cdf[j-1]
+                fraction = denominator > 0 ? (u-cdf[j-1])/denominator : 1.0
+                times[n] = grid[j-1] + fraction*(grid[j]-grid[j-1])
+            end
+            branchindices[n] = k
+            finalindices[n] = branches[k].final
+        end
+    end
+
+    return (times=times,branchindices=branchindices,finalindices=finalindices,
+            grid=grid,profiles=profiles,transitionToF=transitionToF)
 end
 
 function ToF(path,Qᵦ,Sₙ,Eₓ)
@@ -157,7 +212,8 @@ display(p)
 
 end
 
-function MCHist(cutoff,path,Z,Qᵦ,Sₙ,Eₓ,BGT,backgroundlevel,ionsample,t₁,t₂,eff=nothing)
+function MCHist(cutoff,path,Z,Qᵦ,Sₙ,Eₓ,BGT,backgroundlevel,ionsample,t₁,t₂,eff=nothing;
+                returnmetadata=false)
 
 peaksample = []
 promptsample = []
@@ -186,7 +242,10 @@ promptsample=MonteCarlo.mcreject(1,t₁,t₂,promptevents,promptresponse)
 
 backgroundsample=MonteCarlo.mcreject(1,t₁,t₂,backgroundevents,t->1.0)
 
-return [ peaksample ; promptsample ; backgroundsample ]
+sample = [peaksample; promptsample; backgroundsample]
+return returnmetadata ?
+    (sample=sample,neutrons=peaksample,prompt=promptsample,
+     background=backgroundsample) : sample
 
 end
 
@@ -207,7 +266,10 @@ which corresponds to assuming equal reduced widths. The selected `L` also
 satisfies the neutron-emission parity relation `πᵢ = πᶠ(-1)^L`.
 """
 function MCHist(cutoff,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT,
-                  backgroundlevel,ionsample,t₁,t₂,eff=nothing)
+                backgroundlevel,ionsample,t₁,t₂,eff=nothing;
+                returnmetadata=false)
+    _ = cutoff # Retained for API compatibility; inverse-CDF sampling needs no envelope.
+    backgroundlevel >= 0 || throw(ArgumentError("backgroundlevel must be nonnegative"))
     branches = neutronbranches(Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT)
     neutronenergies = getproperty.(branches,:energy)
     intensities = getproperty.(branches,:intensity)
@@ -215,19 +277,20 @@ function MCHist(cutoff,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT,
         intensities = intensities .* εᵥ.(neutronenergies,0.8)
     end
 
-    transitionToF = neutronToF.(path,neutronenergies)
-    response(t) = sum(VandleResponses.isolderesponse.(t,intensities,transitionToF,path))
-    promptresponse(t) = exp(-0.5*(t-path/c)^2)
-
-    peakevents = round(Int,ionsample*windowintegral(response,t₁,t₂))
-    promptevents = round(Int,ionsample*windowintegral(promptresponse,t₁,t₂))
+    neutrondata = sampleexcitedbranches(branches,path,intensities,ionsample,t₁,t₂)
+    promptdistribution = Normal(path/c,1)
+    promptarea = sqrt(2π)*(cdf(promptdistribution,t₂)-cdf(promptdistribution,t₁))
+    promptevents = round(Int,ionsample*promptarea)
     backgroundevents = round(Int,backgroundlevel*(t₂-t₁))
+    promptsample = promptevents == 0 ? Float64[] :
+        rand(truncated(promptdistribution,t₁,t₂),promptevents)
+    backgroundsample = backgroundevents == 0 ? Float64[] :
+        rand(Uniform(t₁,t₂),backgroundevents)
+    sample = [neutrondata.times; promptsample; backgroundsample]
 
-    peaksample = MonteCarlo.mcreject(cutoff,t₁,t₂,peakevents,response)
-    promptsample = MonteCarlo.mcreject(1,t₁,t₂,promptevents,promptresponse)
-    backgroundsample = MonteCarlo.mcreject(1,t₁,t₂,backgroundevents,t->1.0)
-
-    return [peaksample; promptsample; backgroundsample]
+    return returnmetadata ?
+        (sample=sample,neutrons=neutrondata,prompt=promptsample,
+         background=backgroundsample,branches=branches,intensities=intensities) : sample
 end
 
 function plotMCHist(cutoff,ymax,path,Z,Qᵦ,Sₙ,Eₓ,BGT,backgroundlevel,ionsample,t₁,t₂,spin=nothing,eff=nothing)
@@ -242,7 +305,10 @@ if isnothing(eff) Iₙ = selectedintensities.*εᵥ.(Eₙ)
 else  Iₙ = selectedintensities
 end
 
-sample = MCHist(cutoff,path,Z,Qᵦ,Sₙ,Eₓ,BGT,backgroundlevel,ionsample,t₁,t₂,eff)
+simulation = MCHist(cutoff,path,Z,Qᵦ,Sₙ,Eₓ,BGT,backgroundlevel,ionsample,t₁,t₂,eff;
+                    returnmetadata=true)
+sample = simulation.sample
+neutroncount = length(simulation.neutrons)
 nbins = max(1,round(Int,t₂-t₁))
 binedges = range(t₁,t₂,length=nbins+1)
 binwidth = step(binedges)
@@ -251,6 +317,7 @@ p=plot(sample,
         weights=fill(inv(binwidth),length(sample)),
         ylims=(0,ymax),xlims=(t₁,t₂),label="",
         xlabel="ToF (ns)",ylabel="counts/ns",
+        title="Nₙ = $neutroncount counts",
         top_margin=7mm)
         
 p=plot!(t->backgroundlevel+sum(VandleResponses.isolderesponse.(t,Iₙ,ToF(path,Qᵦ,Sₙ,Eₓ),path))*ionsample,t₁,t₂,
@@ -289,31 +356,34 @@ for i in findall(tofticks.<(t₂-20))
     annotate!(tofticks[i],ymax+ymax/20,text("$(enticks[i])",12))
 end
 annotate!(t₂,ymax+ymax/20,text("Eₙ (MeV)",12,:right))
-display(p)
-
+# display(p)
+return p
 end
 
 """
-    plotMChistEx(cutoff, ymax, path, Z, A, Qᵦ, Sₙ,
-                 Eₓ, Jᵢ, πᵢ, Eᶠ, Jᶠ, πᶠ, BGT,
-                 backgroundlevel, ionsample, t₁, t₂, eff=nothing)
+    plotMCHist(cutoff, ymax, path, Z, A, Qᵦ, Sₙ,
+               Eₓ, Jᵢ, πᵢ, Eᶠ, Jᶠ, πᶠ, BGT,
+               backgroundlevel, ionsample, t₁, t₂, eff=nothing)
 
-Plot a time-of-flight sample from [`MCHistEx`](@ref), its summed expected
+Plot a time-of-flight sample from the excited-state [`MCHist`](@ref) method, its summed expected
 response, and every energetically open neutron branch. Parities must be given
-as `+1` or `-1`.
+as `+1` or `-1`. Returns `(p, stateplots, stateplotsgamma)`, where `p` is the
+total spectrum, `stateplots[f]` contains every transition feeding `Eᶠ[f]`
+without gamma-efficiency correction, and `stateplotsgamma[f]` contains the
+same spectrum corrected by the CLARION gamma efficiency.
 """
 function plotMCHist(cutoff,ymax,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT,
                       backgroundlevel,ionsample,t₁,t₂,eff=nothing)
-    branches = neutronbranches(Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT)
-    neutronenergies = getproperty.(branches,:energy)
-    intensities = getproperty.(branches,:intensity)
-    if isnothing(eff)
-        intensities = intensities .* εᵥ.(neutronenergies,0.8)
-    end
-    transitionToF = neutronToF.(path,neutronenergies)
-
-    sample = MCHist(cutoff,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT,
-                      backgroundlevel,ionsample,t₁,t₂,eff)
+    simulation = MCHist(cutoff,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,πᶠ,BGT,
+                        backgroundlevel,ionsample,t₁,t₂,eff;
+                        returnmetadata=true)
+    sample = simulation.sample
+    neutroncount = length(simulation.neutrons.times)
+    branches = simulation.branches
+    neutrondata = simulation.neutrons
+    responsegrid = neutrondata.grid
+    profiles = neutrondata.profiles
+    totalprofile = reduce(+,profiles; init=zeros(Float64,length(responsegrid)))
     nbins = max(1,round(Int,t₂-t₁))
     binedges = range(t₁,t₂,length=nbins+1)
     binwidth = step(binedges)
@@ -322,21 +392,63 @@ function plotMCHist(cutoff,ymax,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,π�
              weights=fill(inv(binwidth),length(sample)),
              ylims=(0,ymax),xlims=(t₁,t₂),label="",
              xlabel="ToF (ns)",ylabel="counts/ns",
+             title="Nₙ = $neutroncount counts",
              top_margin=7mm)
 
-    p = plot!(t->backgroundlevel +
-                  sum(VandleResponses.isolderesponse.(t,intensities,transitionToF,path))*ionsample,
-              t₁,t₂,lw=1.5,lc=:red,label="sum")
+    p = plot!(responsegrid,backgroundlevel .+ ionsample.*totalprofile,
+              lw=1.5,lc=:red,label="sum")
     p = hline!([backgroundlevel],lw=2,lc=:black,ls=:dash,
                label="background + γ flash")
     p = plot!(t->ionsample*exp(-0.5(t-path/c)^2),0,10,
               lc=:black,lw=2,ls=:dash,label="")
 
-    for i in eachindex(branches)
-        branch = branches[i]
-        label = i == 1 ? "individual transitions" : ""
-        p = plot!(t->VandleResponses.isolderesponse(t,intensities[i],transitionToF[i],path)*ionsample,
-                  linecolor=:black,label=label)
+    branchplotindices = collect(1:20:length(responsegrid))
+    last(branchplotindices) == length(responsegrid) || push!(branchplotindices,length(responsegrid))
+    function plotbranches!(branchplot,branchindices,scale,label)
+        isempty(branchindices) && return branchplot
+        branchx = Float64[]
+        branchy = Float64[]
+        sizehint!(branchx,length(branchindices)*(length(branchplotindices)+1))
+        sizehint!(branchy,length(branchindices)*(length(branchplotindices)+1))
+        for i in branchindices
+            append!(branchx,@view responsegrid[branchplotindices])
+            append!(branchy,scale.*(@view profiles[i][branchplotindices]))
+            push!(branchx,NaN)
+            push!(branchy,NaN)
+        end
+        return plot!(branchplot,branchx,branchy,
+                     linecolor=:black,label=label)
+    end
+    p = plotbranches!(p,eachindex(branches),ionsample,"individual transitions")
+
+    function finalstatespectrum(f,statesample,scale,titlesuffix)
+        branchindices = findall(branch->branch.final == f,branches)
+        stateprofile = reduce(+,profiles[branchindices];
+                              init=zeros(Float64,length(responsegrid)))
+        stateplot = plot(statesample,
+                         seriestype=:stephist,lc=:navy,lw=1.5,bins=binedges,
+                         weights=fill(inv(binwidth),length(statesample)),
+                         xlims=(t₁,t₂),label="",
+                         xlabel="ToF (ns)",ylabel="counts/ns",
+                         title="Eᶠ = $(Eᶠ[f]) MeV$titlesuffix, N = $(length(statesample)) counts")
+        stateplot = plot!(stateplot,responsegrid,ionsample*scale.*stateprofile,
+                          lw=1.5,lc=:red,label="sum")
+        stateplot = plotbranches!(stateplot,branchindices,ionsample*scale,"")
+        return stateplot
+    end
+
+    stateplots = Plots.Plot[]
+    stateplotsgamma = Plots.Plot[]
+    for f in eachindex(Eᶠ)
+        gammaefficiency = iszero(Eᶠ[f]) ? 1.0 : 2*FDSiEfficiencies.clarion(Eᶠ[f])
+        0 <= gammaefficiency <= 1 ||
+            throw(ArgumentError("gamma efficiency for Eᶠ=$(Eᶠ[f]) MeV must be between 0 and 1"))
+        statesample = neutrondata.times[neutrondata.finalindices .== f]
+        gammasample = gammaefficiency == 1 ? copy(statesample) :
+            statesample[rand(length(statesample)) .< gammaefficiency]
+        push!(stateplots,finalstatespectrum(f,statesample,1.0,""))
+        push!(stateplotsgamma,finalstatespectrum(
+            f,gammasample,gammaefficiency," (γ efficiency)"))
     end
 
     enticks = [0.05,0.1,0.2,0.3,0.5,1.0,2.0,5.0]
@@ -346,7 +458,8 @@ function plotMCHist(cutoff,ymax,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,π�
         annotate!(tofticks[i],ymax+ymax/20,text("$(enticks[i])",12))
     end
     annotate!(t₂,ymax+ymax/20,text("Eₙ (MeV)",12,:right))
-    display(p)
+    # display(p)
+    return p,stateplots,stateplotsgamma
 end
 
 end

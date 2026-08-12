@@ -35,5 +35,20 @@ function s3hen(Eₙ)
 
 end
 
+function hagrid(Eᵧ)
+
+    par = [-0.3962390537432245
+           -0.6601883326364469
+            0.06807068383125314
+            0.060087348759686306
+           -0.4294040973226941
+    ]
+
+    Ωhagrid = 20*π*(5.08/2)^2/(4*π*18.8^2); # 2 inch
+
+    return Ωhagrid *  max(10^sum(par.*log10(Eᵧ).^(eachindex(par).-1)),0)
+
+end
+
 
 end
