@@ -1,0 +1,62 @@
+
+ Energy levels
+
+    N    J prty N_Jp    T     E(MeV)  Ex(MeV)  log-file
+
+    1   5/2 +     1  13/2   -177.425    0.000  log_Al39_sdpf-m_j5p.txt 
+    2   7/2 +     1  13/2   -176.339    1.086  log_Al39_sdpf-m_j7p.txt 
+    3   1/2 +     1  13/2   -176.256    1.169  log_Al39_sdpf-m_j1p.txt 
+    4   9/2 +     1  13/2   -176.213    1.212  log_Al39_sdpf-m_j9p.txt 
+    5   3/2 +     1  13/2   -176.102    1.324  log_Al39_sdpf-m_j3p.txt 
+    6   9/2 +     2  13/2   -175.506    1.919  log_Al39_sdpf-m_j9p.txt 
+    7   5/2 +     2  13/2   -175.480    1.945  log_Al39_sdpf-m_j5p.txt 
+    8  11/2 +     1  13/2   -175.358    2.067  log_Al39_sdpf-m_j11p.txt 
+    9   5/2 +     3  13/2   -175.259    2.167  log_Al39_sdpf-m_j5p.txt 
+   10   7/2 +     2  13/2   -175.164    2.261  log_Al39_sdpf-m_j7p.txt 
+   11  13/2 +     1  13/2   -175.051    2.375  log_Al39_sdpf-m_j13p.txt 
+   12   5/2 +     4  13/2   -174.962    2.463  log_Al39_sdpf-m_j5p.txt 
+   13  13/2 +     2  13/2   -174.938    2.487  log_Al39_sdpf-m_j13p.txt 
+   14   3/2 +     2  13/2   -174.930    2.495  log_Al39_sdpf-m_j3p.txt 
+   15   9/2 +     3  13/2   -174.869    2.556  log_Al39_sdpf-m_j9p.txt 
+   16   1/2 +     2  13/2   -174.835    2.590  log_Al39_sdpf-m_j1p.txt 
+   17  11/2 +     2  13/2   -174.831    2.594  log_Al39_sdpf-m_j11p.txt 
+   18   7/2 +     3  13/2   -174.760    2.665  log_Al39_sdpf-m_j7p.txt 
+   19  11/2 +     3  13/2   -174.650    2.775  log_Al39_sdpf-m_j11p.txt 
+   20   7/2 +     4  13/2   -174.562    2.863  log_Al39_sdpf-m_j7p.txt 
+   21   3/2 +     3  13/2   -174.561    2.864  log_Al39_sdpf-m_j3p.txt 
+   22   9/2 +     4  13/2   -174.521    2.904  log_Al39_sdpf-m_j9p.txt 
+   23   1/2 +     3  13/2   -174.449    2.976  log_Al39_sdpf-m_j1p.txt 
+   24  11/2 -     1  13/2   -174.444    2.982  log_Al39_sdpf-m_j11n.txt 
+   25   3/2 +     4  13/2   -174.426    2.999  log_Al39_sdpf-m_j3p.txt 
+   26  11/2 +     4  13/2   -174.347    3.078  log_Al39_sdpf-m_j11p.txt 
+   27   1/2 +     4  13/2   -174.321    3.104  log_Al39_sdpf-m_j1p.txt 
+   28   7/2 -     1  13/2   -174.296    3.129  log_Al39_sdpf-m_j7n.txt 
+   29  13/2 +     3  13/2   -174.212    3.214  log_Al39_sdpf-m_j13p.txt 
+   30   1/2 -     1  13/2   -174.149    3.277  log_Al39_sdpf-m_j1n.txt 
+   31  13/2 +     4  13/2   -174.147    3.278  log_Al39_sdpf-m_j13p.txt 
+   32   3/2 -     1  13/2   -174.103    3.322  log_Al39_sdpf-m_j3n.txt 
+   33   9/2 -     1  13/2   -174.057    3.369  log_Al39_sdpf-m_j9n.txt 
+   34   3/2 -     2  13/2   -174.047    3.379  log_Al39_sdpf-m_j3n.txt 
+   35   5/2 -     1  13/2   -174.033    3.392  log_Al39_sdpf-m_j5n.txt 
+   36  13/2 -     1  13/2   -173.967    3.459  log_Al39_sdpf-m_j13n.txt 
+   37   5/2 -     2  13/2   -173.889    3.537  log_Al39_sdpf-m_j5n.txt 
+   38   7/2 -     2  13/2   -173.838    3.587  log_Al39_sdpf-m_j7n.txt 
+   39   9/2 -     2  13/2   -173.838    3.588  log_Al39_sdpf-m_j9n.txt 
+   40   1/2 -     2  13/2   -173.788    3.637  log_Al39_sdpf-m_j1n.txt 
+   41   3/2 -     3  13/2   -173.736    3.690  log_Al39_sdpf-m_j3n.txt 
+   42   5/2 -     3  13/2   -173.708    3.718  log_Al39_sdpf-m_j5n.txt 
+   43   3/2 -     4  13/2   -173.692    3.733  log_Al39_sdpf-m_j3n.txt 
+   44   9/2 -     3  13/2   -173.671    3.754  log_Al39_sdpf-m_j9n.txt 
+   45  11/2 -     2  13/2   -173.657    3.768  log_Al39_sdpf-m_j11n.txt 
+   46   5/2 -     4  13/2   -173.620    3.806  log_Al39_sdpf-m_j5n.txt 
+   47   7/2 -     3  13/2   -173.618    3.808  log_Al39_sdpf-m_j7n.txt 
+   48   7/2 -     4  13/2   -173.548    3.877  log_Al39_sdpf-m_j7n.txt 
+   49   9/2 -     4  13/2   -173.338    4.088  log_Al39_sdpf-m_j9n.txt 
+   50  11/2 -     3  13/2   -173.335    4.090  log_Al39_sdpf-m_j11n.txt 
+   51  13/2 -     2  13/2   -173.101    4.324  log_Al39_sdpf-m_j13n.txt 
+   52   1/2 -     3  13/2   -173.047    4.378  log_Al39_sdpf-m_j1n.txt 
+   53  11/2 -     4  13/2   -172.928    4.498  log_Al39_sdpf-m_j11n.txt 
+   54  13/2 -     3  13/2   -172.911    4.514  log_Al39_sdpf-m_j13n.txt 
+   55   1/2 -     4  13/2   -172.569    4.856  log_Al39_sdpf-m_j1n.txt 
+   56  13/2 -     4  13/2   -172.509    4.916  log_Al39_sdpf-m_j13n.txt 
+

@@ -455,15 +455,19 @@ function plotMCHist(cutoff,ymax,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,π�
     enticks = [0.05,0.1,0.2,0.3,0.5,1.0,2.0,5.0]
     tofticks = neutronToF.(path,enticks)
     function plotneutronenergyscale!(target)
-        plotymax = last(ylims(target))
+        plotylims = ylims(target)
+        plot!(target,ylims=plotylims)
+        plotymax = last(plotylims)
+        ticklength = plotymax/20
+        labeloffset = plotymax/18
         for i in findall(tofticks.<(t₂-20))
             plot!(target,[tofticks[i],tofticks[i]],
-                  [plotymax-plotymax/20,plotymax],
+                  [plotymax-ticklength,plotymax],
                   lc=:black,lw=1,label="")
-            annotate!(target,tofticks[i],plotymax+plotymax/20,
+            annotate!(target,tofticks[i],plotymax+labeloffset,
                       text("$(enticks[i])",12))
         end
-        annotate!(target,t₂,plotymax+plotymax/20,text("Eₙ (MeV)",12,:right))
+        annotate!(target,t₂,plotymax+labeloffset,text("Eₙ (MeV)",12,:right))
         return target
     end
     for target in Iterators.flatten(((p,),stateplots,stateplotsgamma))
