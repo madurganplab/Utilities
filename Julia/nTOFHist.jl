@@ -348,15 +348,14 @@ else
     end
 end
 
+# plot neutron energy scale on top of figure frame
 enticks = [0.05,0.1,0.2,0.3,0.5,1.0,2.0,5.0]
 tofticks = ToF(path,Qᵦ,Sₙ,enticks.+Sₙ)
-
 for i in findall(tofticks.<(t₂-20))
     plot!([tofticks[i],tofticks[i]],[ymax-ymax/20,ymax],lc=:black,lw=1,label="")
     annotate!(tofticks[i],ymax+ymax/20,text("$(enticks[i])",12))
 end
 annotate!(t₂,ymax+ymax/20,text("Eₙ (MeV)",12,:right))
-# display(p)
 return p
 end
 
@@ -430,7 +429,8 @@ function plotMCHist(cutoff,ymax,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,π�
                          weights=fill(inv(binwidth),length(statesample)),
                          xlims=(t₁,t₂),label="",
                          xlabel="ToF (ns)",ylabel="counts/ns",
-                         title="Eᶠ = $(Eᶠ[f]) MeV$titlesuffix, N = $(length(statesample)) counts")
+                         title="Eᶠ = $(Eᶠ[f]) MeV$titlesuffix, N = $(length(statesample)) counts",
+                         top_margin=7mm)
         stateplot = plot!(stateplot,responsegrid,ionsample*scale.*stateprofile,
                           lw=1.5,lc=:red,label="sum")
         stateplot = plotbranches!(stateplot,branchindices,ionsample*scale,"")
@@ -451,14 +451,25 @@ function plotMCHist(cutoff,ymax,path,Z,A,Qᵦ,Sₙ,Eₓ,Jᵢ,πᵢ,Eᶠ,Jᶠ,π�
             f,gammasample,gammaefficiency," (γ efficiency)"))
     end
 
+    # plot neutron energy scale on top of figure frame
     enticks = [0.05,0.1,0.2,0.3,0.5,1.0,2.0,5.0]
     tofticks = neutronToF.(path,enticks)
-    for i in findall(tofticks.<(t₂-20))
-        plot!([tofticks[i],tofticks[i]],[ymax-ymax/20,ymax],lc=:black,lw=1,label="")
-        annotate!(tofticks[i],ymax+ymax/20,text("$(enticks[i])",12))
+    function plotneutronenergyscale!(target)
+        plotymax = last(ylims(target))
+        for i in findall(tofticks.<(t₂-20))
+            plot!(target,[tofticks[i],tofticks[i]],
+                  [plotymax-plotymax/20,plotymax],
+                  lc=:black,lw=1,label="")
+            annotate!(target,tofticks[i],plotymax+plotymax/20,
+                      text("$(enticks[i])",12))
+        end
+        annotate!(target,t₂,plotymax+plotymax/20,text("Eₙ (MeV)",12,:right))
+        return target
     end
-    annotate!(t₂,ymax+ymax/20,text("Eₙ (MeV)",12,:right))
-    # display(p)
+    for target in Iterators.flatten(((p,),stateplots,stateplotsgamma))
+        plotneutronenergyscale!(target)
+    end
+
     return p,stateplots,stateplotsgamma
 end
 
